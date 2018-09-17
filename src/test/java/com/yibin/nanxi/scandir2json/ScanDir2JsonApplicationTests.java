@@ -1,5 +1,7 @@
 package com.yibin.nanxi.scandir2json;
 
+import com.alibaba.fastjson.JSONObject;
+import com.yibin.nanxi.scandir2json.util.PlaceHolderUtil;
 import com.yibin.nanxi.scandir2json.util.ZipUtil;
 import net.lingala.zip4j.core.ZipFile;
 import net.lingala.zip4j.exception.ZipException;
@@ -8,6 +10,7 @@ import org.junit.Test;
 
 import java.io.File;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -50,18 +53,28 @@ public class ScanDir2JsonApplicationTests {
 
     @Test
     public void test3() throws ZipException {
-        Instant start1 = Instant.now();
-        Boolean aBoolean = ZipUtil.compressFolderWithTargetFolder("F:/test/test5.zip", null, "F:/test2");
-        System.out.println(aBoolean);
-        Instant start2 = Instant.now();
-        System.out.println("压缩时间 " + Duration.between(start1,start2).toMinutes());
+//        Instant start1 = Instant.now();
+//        Boolean aBoolean = ZipUtil.compressFolderWithTargetFolder("F:/test/test5.zip", null, "F:/test2");
+//        System.out.println(aBoolean);
+//        Instant start2 = Instant.now();
+//        System.out.println("压缩时间 " + Duration.between(start1,start2).toMinutes());
 
         Instant start3 = Instant.now();
-        File[] files = ZipUtil.deCompress("F:/test/test5.zip", "F:/test2", null);
-        System.out.println(files);
+        Boolean bool = ZipUtil.deCompress("F:/test/test.zip", "F:/test2", null);
+        System.out.println(bool);
         Instant start4 = Instant.now();
         System.out.println("解压时间 " + Duration.between(start3,start4).toMinutes());
 
+    }
+
+    @Test
+    public void test4() throws IOException {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("stage","model");
+        jsonObject.put("stageName","co");
+        jsonObject.put("job","cc");
+        String s = PlaceHolderUtil.replacePlaceHolders(jsonObject);
+        System.out.println(s);
     }
 
 

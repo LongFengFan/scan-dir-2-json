@@ -1,9 +1,9 @@
 package com.yibin.nanxi.scandir2json.util;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.springframework.util.StringUtils;
 
@@ -136,23 +136,26 @@ public class ZipUtil {
      * @return 解压后的文件数组
      * @throws ZipException
      */
-//    @SuppressWarnings("unchecked")
-    public static File[] deCompress(File zipFile, String dest, String passwd) throws ZipException {
+    @SuppressWarnings("unchecked")
+    public static Boolean deCompress(File zipFile, String dest, String passwd) throws ZipException {
         if (!zipFile.exists()){
-            throw new ZipException("zip File is not exist");
+            throw new ZipException(String.format("zip File is not exist ; %s" , zipFile.getName()));
         }
-        //1.判断指定目录是否存在
+        if (!zipFile.getName().endsWith(".zip")){
+            throw new ZipException(String.format(" file is not a zip file ; %s" , zipFile.getName()));
+        }
+        //1.判断指定解压目录是否存在
         File destDir = new File(dest);
         if (destDir.isDirectory() && !destDir.exists()) {
-            throw new ZipException("dest folder is not exist");
+            throw new ZipException((String.format("dest folder : [%s] is not exist" , dest)));
         }
         if (destDir.isFile()) {
-            throw new ZipException("dest is not a directory");
+            throw new ZipException(String.format("dest [%s] is not a directory" , dest));
         }
 
         //2.初始化zip工具
         ZipFile zFile = new ZipFile(zipFile);
-        zFile.setFileNameCharset("UTF-8");
+        zFile.setFileNameCharset("GBK");
         if (!zFile.isValidZipFile()) {
             throw new ZipException("压缩文件不合法,可能被损坏.");
         }
@@ -160,18 +163,35 @@ public class ZipUtil {
         if (zFile.isEncrypted()) {
             zFile.setPassword(passwd.toCharArray());
         }
-        //4.解压所有文件
-        zFile.extractAll(dest);
-        List<FileHeader> headerList = zFile.getFileHeaders();
-        List<File> extractedFileList = new ArrayList<>();
-        for(FileHeader fileHeader : headerList) {
-            if (!fileHeader.isDirectory()) {
-                extractedFileList.add(new File(destDir,fileHeader.getFileName()));
+// 查看文件是否以文件夹进行压缩，否则将自己根据文件名称创建文件夹
+        String name = zipFile.getName();
+        List<FileHeader> extractedFileHeaderList = zFile.getFileHeaders();
+//        extractedFileHeaderList.forEach(fileHeader -> System.out.println(fileHeader.getFileName()));
+        String extractedFirstFileName = extractedFileHeaderList.get(0).getFileName();
+        File extractedFirstFile = new File(dest, extractedFirstFileName);
+        AtomicReference<Boolean> isFirstLevelDir = new AtomicReference<>(true);
+        extractedFileHeaderList.forEach(fileHeader -> {
+            if(! fileHeader.getFileName().startsWith(extractedFirstFileName)){
+                isFirstLevelDir.set(false);
             }
+        });
+        if(isFirstLevelDir.get() && extractedFirstFile.isDirectory()){
+            if (!extractedFirstFile.exists()){
+                zFile.extractAll(dest);
+            }else {
+                throw new ZipException(String.format("您压缩采用的文件夹名称 %s 已经存在，请换一个名称" , extractedFirstFileName));
+            }
+        } else {
+
+            String futureDirPathForExtract = destDir.getAbsolutePath() + File.separator + name.substring(0,name.lastIndexOf(".zip"));
+            File futureDirForExtract = new File(futureDirPathForExtract);
+            if(futureDirForExtract.exists()){
+                throw new ZipException(String.format(" future directory For Extracting : [%s] has existed , please change the package zip name." , futureDirForExtract.getName()));
+            }
+            futureDirForExtract.mkdir();
+            zFile.extractAll(futureDirPathForExtract);
         }
-        File [] extractedFiles = new File[extractedFileList.size()];
-        extractedFileList.toArray(extractedFiles);
-        return extractedFiles;
+        return true;
     }
     /**
      * 解压无密码的zip压缩包到指定目录
@@ -180,7 +200,7 @@ public class ZipUtil {
      * @return 解压后的文件数组
      * @throws ZipException
      */
-    public static File[] deCompress(File zipFile, String dest){
+    public static Boolean deCompress(File zipFile, String dest){
         try {
             return deCompress(zipFile, dest, null);
         } catch (ZipException e) {
@@ -195,7 +215,7 @@ public class ZipUtil {
      * @param passwd 压缩包密码
      * @return 解压后的所有文件数组
      */
-    public static File[] deCompress(String zipFilePath, String dest, String passwd) throws ZipException {
+    public static Boolean deCompress(String zipFilePath, String dest, String passwd) throws ZipException {
             return deCompress(new File(zipFilePath), dest, passwd);
     }
     /**
@@ -204,7 +224,7 @@ public class ZipUtil {
      * @param dest 指定解压文件夹位置
      * @return 解压后的所有文件数组
      */
-    public static File[] deCompress(String zipFilePath, String dest){
+    public static Boolean deCompress(String zipFilePath, String dest){
         try {
             return deCompress(new File(zipFilePath), dest, null);
         } catch (ZipException e) {

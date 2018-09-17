@@ -1,0 +1,15 @@
+{
+  "stage": "${stage}",
+  "task":
+    [
+      {
+        "name": "${stageName}",
+        "job" : "${job}"
+      },
+      {
+        "name": "${stageName}",
+        "job" : "${job}"
+      }
+
+    ]
+}

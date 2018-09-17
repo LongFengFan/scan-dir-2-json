@@ -31,6 +31,7 @@ public class ScanDirServiceImpl implements ScanDirService {
         }else if (baseFile.isDirectory()){
             recursionGetDir(baseFile,dirTree);
         }
+        System.out.println(dirTree);
         return dirTree;
     }
 
